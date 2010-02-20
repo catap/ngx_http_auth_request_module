@@ -1,0 +1,34 @@
+Auth request module for nginx.
+
+This module allows authorization based on subrequest result.  Once subrequest
+returns 2xx status - access is allowed, on 401 or 403 - disabled with
+appropriate status.  Anything else is considered to be an error.
+
+For 401 status WWW-Authenticate header from subrequest response will be
+passed to client.
+
+Configuration directives:
+
+    auth_request <uri>|off
+
+        Context: http, server, location
+        Default: off
+
+        Switches auth request module on and sets uri which will be asked for
+        authorization.
+
+Usage:
+
+    location /private/ {
+        auth_request /auth;
+        ...
+    }
+
+    location = /auth {
+        proxy_pass ...
+    }
+
+To compile nginx with auth request module, use "--add-module <path>" option
+to nginx configure.
+
+Development of this module was sponsored by Openstat (http://www.openstat.com/).
