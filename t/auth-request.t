@@ -18,7 +18,7 @@ select STDERR; $| = 1;
 select STDOUT; $| = 1;
 
 my $t = Test::Nginx->new()->has(qw/http rewrite proxy fastcgi auth_basic/)
-	->plan(13);
+	->plan(14);
 
 $t->write_file_expand('nginx.conf', <<'EOF');
 
@@ -74,6 +74,10 @@ http {
             return 404;
         }
 
+        location /off {
+            auth_request off;
+        }
+
         location /proxy {
             auth_request /auth-proxy;
         }
@@ -109,6 +113,7 @@ like(http_get('/open'), qr/ 404 /, 'auth open');
 like(http_get('/unauthorized'), qr/ 401 /, 'auth unauthorized');
 like(http_get('/forbidden'), qr/ 403 /, 'auth forbidden');
 like(http_get('/error'), qr/ 500 /, 'auth error');
+like(http_get('/off'), qr/ 404 /, 'auth off');
 
 like(http_get('/open-static'), qr/ 404 /, 'auth open static');
 unlike(http_get('/open-static'), qr/INVISIBLE/, 'auth static no content');
