@@ -7,6 +7,9 @@ appropriate status.  Anything else is considered to be an error.
 For 401 status WWW-Authenticate header from subrequest response will be
 passed to client.
 
+Module works at access phase and therefore may be combined nicely with other
+access modules (access, auth_basic) via satisfy directive.
+
 Configuration directives:
 
     auth_request <uri>|off
