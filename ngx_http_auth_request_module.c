@@ -159,6 +159,7 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
+    sr->discard_body = 1;
     sr->header_only = 1;
 
     ctx->subrequest = sr;
