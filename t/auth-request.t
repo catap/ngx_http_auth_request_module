@@ -24,6 +24,8 @@ my $t = Test::Nginx->new()->has(qw/http rewrite proxy fastcgi auth_basic/)
 
 $t->write_file_expand('nginx.conf', <<'EOF');
 
+%%TEST_GLOBALS%%
+
 master_process off;
 daemon         off;
 
