@@ -20,6 +20,14 @@ Configuration directives:
         Switches auth request module on and sets uri which will be asked for
         authorization.
 
+    auth_request_set <variable> <value>
+
+        Context: http, server, location
+        Default: none
+
+        Set request variable to the given value after auth request completion.
+        Value may contain variables from auth request, e.g. $upstream_http_*.
+
 Usage:
 
     location /private/ {
