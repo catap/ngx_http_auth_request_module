@@ -20,7 +20,7 @@ select STDERR; $| = 1;
 select STDOUT; $| = 1;
 
 my $t = Test::Nginx->new()->has(qw/http rewrite proxy fastcgi auth_basic/)
-	->plan(17);
+	->plan(18);
 
 $t->write_file_expand('nginx.conf', <<'EOF');
 
@@ -95,6 +95,22 @@ http {
             auth_basic_user_file %%TESTDIR%%/htpasswd;
         }
 
+        location = /proxy-double {
+            proxy_pass http://127.0.0.1:8080/auth-error;
+            proxy_intercept_errors on;
+            error_page 404 = /proxy-double-fallback;
+            client_body_buffer_size 4k;
+        }
+        location = /proxy-double-fallback {
+            auth_request /auth-proxy-double;
+            proxy_pass http://127.0.0.1:8080/auth-open;
+        }
+        location = /auth-proxy-double {
+            proxy_pass http://127.0.0.1:8080/auth-open;
+            proxy_pass_request_body off;
+            proxy_set_header Content-Length "";
+        }
+
         location /fastcgi {
             auth_request /auth-fastcgi;
         }
@@ -136,6 +152,22 @@ unlike(http_get_auth('/proxy'), qr/INVISIBLE/, 'proxy auth no content');
 
 like(http_post('/proxy'), qr/ 401 /, 'proxy auth post');
 
+# Consider the following scenario:
+#
+# 1. proxy_pass reads request body, then goes to fallback via error_page
+# 2. auth request uses proxy_pass, and upstream module closes request body file
+#    in ngx_http_upstream_send_response()
+# 3. oops: fallback has no body
+#
+# To prevent this we always allocate fake request body for auth request.
+#
+# Note that this doesn't happen when using header_only as relevant code
+# in ngx_http_upstream_send_response() isn't reached.  It may be reached
+# with proxy_cache or proxy_store, but they will shutdown client connection
+# in case of header_only and hence do not work for us at all.
+
+like(http_post_big('/proxy-double'), qr/ 204 /, 'proxy auth with body read');
+
 SKIP: {
 	eval { require FCGI; };
 	skip 'FCGI not installed', 2 if $@;
@@ -167,6 +199,18 @@ sub http_post {
 		"Content-Length: 10" . CRLF .
 		CRLF .
 		"1234567890"; 
+
+	return http($p, %extra);
+}
+
+sub http_post_big {
+	my ($url, %extra) = @_;
+
+	my $p = "POST $url HTTP/1.0" . CRLF .
+		"Host: localhost" . CRLF .
+		"Content-Length: 10240" . CRLF .
+		CRLF .
+		("1234567890" x 1024); 
 
 	return http($p, %extra);
 }

@@ -190,7 +190,16 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    sr->discard_body = 1;
+    /*
+     * allocate fake request body to avoid attempts to read it and to make
+     * sure real body file (if already read) won't be closed by upstream
+     */
+
+    sr->request_body = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
+    if (sr->request_body == NULL) {
+        return NGX_ERROR;
+    }
+
     sr->header_only = 1;
 
     ctx->subrequest = sr;
