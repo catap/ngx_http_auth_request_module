@@ -42,6 +42,10 @@ Usage:
         proxy_set_header X-Original-URI $request_uri;
     }
 
+Note: it is not currently possible to use proxy_cache/proxy_store (and 
+fastcgi_cache/fastcgi_store) for requests initiated by auth request
+module.
+
 To compile nginx with auth request module, use "--add-module <path>" option
 to nginx configure.
 
